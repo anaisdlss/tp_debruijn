@@ -33,7 +33,6 @@ from networkx import (
 import matplotlib
 from operator import itemgetter
 import random
-import networkx as nx
 
 random.seed(9001)
 
@@ -139,7 +138,7 @@ def build_graph(kmer_dict: Dict[str, int]) -> DiGraph:
     :param kmer_dict: A dictionnary object that identify all kmer occurrences.
     :return: A directed graph (nx) of all kmer substring and weight (occurrence).
     """
-    graph = nx.DiGraph()
+    graph = DiGraph()
     for kmer, occ in kmer_dict.items():
         prefixe = kmer[:-1]
         suffixe = kmer[1:]
@@ -244,7 +243,11 @@ def get_starting_nodes(graph: DiGraph) -> List[str]:
     :param graph: (nx.DiGraph) A directed graph object
     :return: (list) A list of all nodes without predecessors
     """
-    pass
+    noeuds_entree = []
+    for node in graph.nodes():
+        if len(list(graph.predecessors(node))) == 0:
+            noeuds_entree.append(node)
+    return noeuds_entree
 
 
 def get_sink_nodes(graph: DiGraph) -> List[str]:
@@ -253,7 +256,11 @@ def get_sink_nodes(graph: DiGraph) -> List[str]:
     :param graph: (nx.DiGraph) A directed graph object
     :return: (list) A list of all nodes without successors
     """
-    pass
+    noeuds_sortie = []
+    for node in graph.nodes():
+        if len(list(graph.successors(node))) == 0:
+            noeuds_sortie.append(node)
+    return noeuds_sortie
 
 
 def get_contigs(
@@ -266,7 +273,16 @@ def get_contigs(
     :param ending_nodes: (list) A list of nodes without successors
     :return: (list) List of [contiguous sequence and their length]
     """
-    pass
+    contigs = []
+    for entree in starting_nodes:
+        for sortie in ending_nodes:
+            if has_path(graph, entree, sortie):
+                for path in all_simple_paths(graph, entree, sortie):
+                    contig = path[0]
+                    for node in path[1:]:
+                        contig += node[-1]
+                    contigs.append((contig, len(contig)))
+    return contigs
 
 
 def save_contigs(contigs_list: List[str], output_file: Path) -> None:
@@ -275,7 +291,10 @@ def save_contigs(contigs_list: List[str], output_file: Path) -> None:
     :param contig_list: (list) List of [contiguous sequence and their length]
     :param output_file: (Path) Path to the output file
     """
-    pass
+    with open(output_file, "w") as output:
+        for i, (contig, taille) in enumerate(contigs_list):
+            output.write(f">contig_{i} len={taille}\n")
+            output.write(textwrap.fill(contig, width=80) + "\n")
 
 
 def draw_graph(graph: DiGraph, graphimg_file: Path) -> None:  # pragma: no cover
@@ -307,12 +326,33 @@ def draw_graph(graph: DiGraph, graphimg_file: Path) -> None:  # pragma: no cover
 # ==============================================================
 # Main program
 # ==============================================================
-def main() -> None:  # pragma: no cover
-    """
-    Main program function
-    """
-    # Get arguments
+def main() -> None:
+    """Main program function """
+    # Récupérer les arguments
     args = get_arguments()
+
+    # Construire le dictionnaire de k-mers
+    kmer_dict = build_kmer_dict(args.fastq_file, args.kmer_size)
+    print(f"{len(kmer_dict)} k-mers générés.")
+
+    # Construire le graphe de De Bruijn
+    graph = build_graph(kmer_dict)
+    print(f"Graphe construit avec {graph.number_of_nodes()} noeuds et {
+          graph.number_of_edges()} arêtes.")
+
+    # Identifier les noeuds d'entrée et de sortie
+    starting_nodes = get_starting_nodes(graph)
+    ending_nodes = get_sink_nodes(graph)
+    print(f"{len(starting_nodes)} noeuds d'entrée, {
+          len(ending_nodes)} noeuds de sortie.")
+
+    # Extraire les contigs
+    contigs = get_contigs(graph, starting_nodes, ending_nodes)
+    print(f"{len(contigs)} contigs générés.")
+
+    # Sauvegarder les contigs dans un fichier FASTA
+    save_contigs(contigs, args.output_file)
+    print(f"Contigs sauvegardés dans {args.output_file}.")
 
     # Fonctions de dessin du graphe
     # A decommenter si vous souhaitez visualiser un petit
