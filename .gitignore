@@ -3,3 +3,4 @@ __py_cache__
 .coverage
 
 results/
+*.DS_Store
