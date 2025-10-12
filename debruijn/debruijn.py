@@ -22,6 +22,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+import networkx as nx
 from networkx import (
     DiGraph,
     all_simple_paths,
@@ -161,17 +162,32 @@ def remove_paths(
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    nodes_to_remove = set()
+    for path in path_list:
+        if not path:
+            continue
+        if len(path) == 1:
+            if delete_entry_node and delete_sink_node:
+                nodes_to_remove.add(path[0])
+            continue
+        start_idx = 0
+        end_idx = len(path) - 1
+        del_start = start_idx if delete_entry_node else start_idx + 1
+        del_end = end_idx if delete_sink_node else end_idx - 1
+        for i in range(del_start, del_end + 1):
+            if 0 <= i < len(path):
+                nodes_to_remove.add(path[i])
+    graph.remove_nodes_from(nodes_to_remove)
+    return graph
 
 
 def select_best_path(
-    graph: DiGraph,
-    path_list: List[List[str]],
-    path_length: List[int],
-    weight_avg_list: List[float],
-    delete_entry_node: bool = False,
-    delete_sink_node: bool = False,
-) -> DiGraph:
+        graph: DiGraph,
+        path_list: List[List[str]],
+        path_length: List[int],
+        weight_avg_list: List[float],
+        delete_entry_node: bool = False,
+        delete_sink_node: bool = False) -> DiGraph:
     """Select the best path between different paths
 
     :param graph: (nx.DiGraph) A directed graph object
@@ -182,7 +198,39 @@ def select_best_path(
     :param delete_sink_node: (boolean) True->We remove the last node of a path
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    if not path_list or len(path_list) <= 1:
+        return graph
+    n = len(path_list)
+    if len(path_length) != n or len(weight_avg_list) != n:
+        raise ValueError(
+            "path_length and weight_avg_list must have the same length as path_list")
+    best_index = None
+    try:
+        if n >= 2:
+            w_stdev = statistics.stdev(weight_avg_list)
+        else:
+            w_stdev = 0.0
+    except statistics.StatisticsError:
+        w_stdev = 0.0
+    if w_stdev > 0:
+        best_index = max(range(n), key=lambda i: weight_avg_list[i])
+    else:
+        try:
+            if n >= 2:
+                l_stdev = statistics.stdev(path_length)
+            else:
+                l_stdev = 0.0
+        except statistics.StatisticsError:
+            l_stdev = 0.0
+        if l_stdev > 0:
+            best_index = max(range(n), key=lambda i: path_length[i])
+        else:
+            best_index = randint(0, n - 1)
+    bad_paths = [p for idx, p in enumerate(path_list) if idx != best_index]
+    if bad_paths:
+        graph = remove_paths(
+            graph, bad_paths, delete_entry_node, delete_sink_node)
+    return graph
 
 
 def path_average_weight(graph: DiGraph, path: List[str]) -> float:
@@ -205,16 +253,58 @@ def solve_bubble(graph: DiGraph, ancestor_node: str, descendant_node: str) -> Di
     :param descendant_node: (str) A downstream node in the graph
     :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    path_list = list(nx.all_simple_paths(
+        graph, source=ancestor_node, target=descendant_node))
+    if len(path_list) <= 1:
+        return graph
+    path_length_list: List[int] = []
+    weight_avg_list: List[float] = []
+    for path in path_list:
+        path_length_list.append(len(path))
+        edges_data = list(graph.subgraph(path).edges(data=True))
+        weights = [d["weight"] for (_, _, d) in edges_data if "weight" in d]
+        weight_avg = statistics.mean(weights) if weights else 0
+        weight_avg_list.append(weight_avg)
+    graph = select_best_path(
+        graph,
+        path_list,
+        path_length_list,
+        weight_avg_list,
+        delete_entry_node=False,
+        delete_sink_node=False,
+    )
+    return graph
 
 
 def simplify_bubbles(graph: DiGraph) -> DiGraph:
-    """Detect and explode bubbles
-
-    :param graph: (nx.DiGraph) A directed graph object
-    :return: (nx.DiGraph) A directed graph object
     """
-    pass
+    Detect and explode bubbles in a directed graph.
+    :param graph: (nx.DiGraph) A directed graph
+    :return: (nx.DiGraph) Graph with bubbles simplified
+    """
+    bubble_found = False
+    bubble_start = None
+    bubble_end = None
+    for node in graph.nodes:
+        predecessors = list(graph.predecessors(node))
+        if len(predecessors) > 1:
+            for i in range(len(predecessors)):
+                for j in range(i + 1, len(predecessors)):
+                    anc = lowest_common_ancestor(
+                        graph, predecessors[i], predecessors[j])
+                    if anc is not None:
+                        bubble_found = True
+                        bubble_start = anc
+                        bubble_end = node
+                        break
+                if bubble_found:
+                    break
+        if bubble_found:
+            break
+    if bubble_found:
+        graph = solve_bubble(graph, bubble_start, bubble_end)
+        graph = simplify_bubbles(graph)
+    return graph
 
 
 def solve_entry_tips(graph: DiGraph, starting_nodes: List[str]) -> DiGraph:
@@ -303,31 +393,32 @@ def draw_graph(graph: DiGraph, graphimg_file: Path) -> None:  # pragma: no cover
     :param graph: (nx.DiGraph) A directed graph object
     :param graphimg_file: (Path) Path to the output file
     """
-    fig, ax = plt.subplots()
-    elarge = [(u, v)
-              for (u, v, d) in graph.edges(data=True) if d["weight"] > 3]
-    # print(elarge)
-    esmall = [(u, v)
-              for (u, v, d) in graph.edges(data=True) if d["weight"] <= 3]
-    # print(elarge)
-    # Draw the graph with networkx
-    # pos=nx.spring_layout(graph)
-    pos = nx.random_layout(graph)
-    nx.draw_networkx_nodes(graph, pos, node_size=6)
-    nx.draw_networkx_edges(graph, pos, edgelist=elarge, width=6)
-    nx.draw_networkx_edges(
-        graph, pos, edgelist=esmall, width=6, alpha=0.5, edge_color="b", style="dashed"
-    )
-    # nx.draw_networkx(graph, pos, node_size=10, with_labels=False)
-    # save image
-    plt.savefig(graphimg_file.resolve())
+    plt.figure(figsize=(12, 12))                      # grande figure
+    # spring_layout donne une disposition plus lisible
+    pos = nx.spring_layout(graph, k=0.5, iterations=100)
+
+    # séparer arêtes fortes/faibles selon poids
+    elarge = [(u, v) for u, v, d in graph.edges(
+        data=True) if d.get("weight", 0) > 3]
+    esmall = [(u, v) for u, v, d in graph.edges(
+        data=True) if d.get("weight", 0) <= 3]
+
+    nx.draw_networkx_nodes(graph, pos, node_size=10, alpha=0.7)
+    nx.draw_networkx_edges(graph, pos, edgelist=esmall,
+                           width=0.5, alpha=0.2, edge_color="gray")
+    nx.draw_networkx_edges(graph, pos, edgelist=elarge,
+                           width=1.5, alpha=0.8, edge_color="red")
+
+    plt.axis("off")
+    plt.tight_layout()
+    plt.savefig(graphimg_file, dpi=300)
+    plt.close()
 
 
 # ==============================================================
 # Main program
-# ==============================================================
 def main() -> None:
-    """Main program function """
+    """Main program function (mise à jour pour appeler les fonctions de nettoyage du graphe)."""
     # Récupérer les arguments
     args = get_arguments()
 
@@ -340,11 +431,41 @@ def main() -> None:
     print(f"Graphe construit avec {graph.number_of_nodes()} noeuds et {
           graph.number_of_edges()} arêtes.")
 
+    # Simplification des bulles
+    graph = simplify_bubbles(graph)
+    print(f"Graphe après simplification des bulles : {
+          graph.number_of_nodes()} noeuds, {graph.number_of_edges()} arêtes.")
+
     # Identifier les noeuds d'entrée et de sortie
     starting_nodes = get_starting_nodes(graph)
     ending_nodes = get_sink_nodes(graph)
     print(f"{len(starting_nodes)} noeuds d'entrée, {
           len(ending_nodes)} noeuds de sortie.")
+
+    # (Optionnel) Résoudre les entry-tips et out-tips s'ils sont implémentés.
+    # On n'affecte graph que si la fonction renvoie bien un objet graphe (non-None).
+    if starting_nodes:
+        result = solve_entry_tips(graph, starting_nodes)
+        if result is not None:
+            graph = result
+        # recalculer les noeuds d'entrée/sortie après modification
+        starting_nodes = get_starting_nodes(graph)
+        ending_nodes = get_sink_nodes(graph)
+        print(f"Après solve_entry_tips : {graph.number_of_nodes()} noeuds, {
+              graph.number_of_edges()} arêtes.")
+        print(f"{len(starting_nodes)} noeuds d'entrée, {
+              len(ending_nodes)} noeuds de sortie.")
+
+    if ending_nodes:
+        result = solve_out_tips(graph, ending_nodes)
+        if result is not None:
+            graph = result
+        starting_nodes = get_starting_nodes(graph)
+        ending_nodes = get_sink_nodes(graph)
+        print(f"Après solve_out_tips : {graph.number_of_nodes()} noeuds, {
+              graph.number_of_edges()} arêtes.")
+        print(f"{len(starting_nodes)} noeuds d'entrée, {
+              len(ending_nodes)} noeuds de sortie.")
 
     # Extraire les contigs
     contigs = get_contigs(graph, starting_nodes, ending_nodes)
@@ -355,11 +476,9 @@ def main() -> None:
     print(f"Contigs sauvegardés dans {args.output_file}.")
 
     # Fonctions de dessin du graphe
-    # A decommenter si vous souhaitez visualiser un petit
-    # graphe
-    # Plot the graph
-    # if args.graphimg_file:
-    #     draw_graph(graph, args.graphimg_file)
+    if args.graphimg_file:
+        draw_graph(graph, args.graphimg_file)
+        print(f"Graphe sauvegardé dans {args.graphimg_file}.")
 
 
 if __name__ == "__main__":  # pragma: no cover
