@@ -14,8 +14,12 @@ Le pipeline permet de :
 Ce TP illustre le fonctionnement interne des assembleurs modernes, la gestion des erreurs de séquençage et la reconstruction de séquences à partir de fragments.
 
 ## Prerequis
+Vous devez avoir Python 3.10+ installé,
+```
+python3 --version
+```
 
-Si ce n'est pas deja fait, make sure que le gestionnaire d'environnement 'uv' est installé.
+Ainsi que le gestionnaire d'environnement 'uv' installé.
 ```
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv --version
@@ -26,15 +30,19 @@ sudo apt install ncbi-blast+     # Linux
 brew install blast               # macOS (Homebrew)
 ```
 
-# Usage
+# 
 
-Veuillez cloner le projet : 
+
+Veuillez cloner le projet et aller au repertoire crée: 
 ```
 git clone https://github.com/anaisdlss/tp_debruijn.git
+cd tp_debruijn
 ```
 
-
-Puis rendez vous dans le repertoire crée.
+Sychroniser l'environnement
+```
+uv sync
+```
 Créez un fichier *résultats* :
 ```
 mkdir resultats
@@ -42,7 +50,7 @@ mkdir resultats
 
 Puis exectutez le script :
 ```
-python3 debruijn/debruijn.py -i data/eva71_plus_perfect.fq -k 22 -o resultats/contigs.fasta -f resultats/graph.png
+uv run python debruijn/debruijn.py -i data/eva71_plus_perfect.fq -k 22 -o resultats/contigs.fasta -f resultats/graph.png
 ```
 Il est possible de modifier la taille des kmer avec -k
 
