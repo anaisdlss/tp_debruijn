@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project implements a simplified genome assembler based on a De Bruijn graph, a method widely used in modern assembly pipelines (e.g., Velvet, SPAdes).
+This project implements a simplified genome assembler based on a De Bruijn graph, a method widely used in modern assembly pipelines.
 
 The goal is to reconstruct the genome of a virus (Enterovirus A71) from short Illumina reads.
 The pipeline allows you to:
