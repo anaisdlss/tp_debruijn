@@ -24,7 +24,7 @@ Ainsi que le gestionnaire d'environnement 'uv' installé.
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv --version
 ```
-Ainsi que BLAST+ soit installé
+Ainsi que le logiciel BLAST+ soit installé
 ```
 sudo apt install ncbi-blast+     # Linux
 brew install blast               # macOS (Homebrew)
