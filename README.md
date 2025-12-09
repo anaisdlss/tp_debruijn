@@ -32,7 +32,7 @@ sudo apt install ncbi-blast+
 brew install blast              
 ```
 
-# 
+## Usage
 
 
 Veuillez cloner le projet et aller au repertoire crée: 
