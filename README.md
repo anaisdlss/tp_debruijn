@@ -1,5 +1,33 @@
 # Assembleur basé sur les graphes de Debruijn
 
+## Introduction
+
+Ce projet implémente un assembleur génomique simplifié basé sur un graphe de De Bruijn, une méthode largement utilisée dans les pipelines d’assemblage modernes (ex. Velvet, SPAdes).
+
+L’objectif est de reconstruire le génome d’un virus (Enterovirus A71) à partir de reads courts (Illumina).
+Le pipeline permet de :
+- générer les k-mers et construire le graphe de De Bruijn
+- nettoyer le graphe (tips, bulles)
+- extraire des contigs
+- comparer ces contigs au génome de référence via BLAST
+
+Ce TP illustre le fonctionnement interne des assembleurs modernes, la gestion des erreurs de séquençage et la reconstruction de séquences à partir de fragments.
+
+## Prerequis
+
+Si ce n'est pas deja fait, make sure que le gestionnaire d'environnement 'uv' est installé.
+```
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv --version
+```
+Ainsi que BLAST+ soit installé
+```
+sudo apt install ncbi-blast+     # Linux
+brew install blast               # macOS (Homebrew)
+```
+
+# Usage
+
 Veuillez cloner le projet : 
 ```
 git clone https://github.com/anaisdlss/tp_debruijn.git
