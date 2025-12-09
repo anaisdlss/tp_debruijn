@@ -97,3 +97,22 @@ blastn -query resultats/contigs.fasta -db data/eva71.fna -out resultats/blast_re
 This step verifies how well the reconstructed contigs align with the known reference, confirming that the assembly reflects the genome from which the reads originally came.
 
 The BLAST results are written to:```resultats/blast_result.txt```.
+
+### Interpretation of BLAST Results
+
+The BLAST output provides a quality assessment of the assembled contigs by comparing them to the reference genome.
+Each column in the BLAST tabular output corresponds to:
+1. qseqid : Query sequence ID (your contig name)
+2. sseqid : Subject sequence ID (reference genome entry)
+3. pident : Percentage of identical bases between query and reference
+4. length : Length of the alignment (number of matched bases)
+5. mismatch : Number of mismatched bases
+6. gapopen : Number of gap openings (insertions/deletions)
+7. qstart : Start position of the alignment on the contig
+8. qend : End position of the alignment on the contig
+9. sstart : Start position of the alignment on the reference genome
+10. send : End position of the alignment on the reference genome
+11. evalue : Statistical significance of the alignment (lower = better)
+12. bitscore : Score of the alignment (higher = better)
+
+Overall, the De Bruijn assembler correctly reconstructs the viral genome with excellent accuracy.
