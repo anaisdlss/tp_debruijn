@@ -1,0 +1,13 @@
+[project]
+name = "tp_debruijn"
+version = "0.1.0"
+description = "Assembleur basé sur un graphe de De Bruijn"
+requires-python = ">=3.10"
+
+dependencies = [
+    "networkx",
+    "matplotlib",
+]
+
+[tool.uv]
+dev-dependencies = []
