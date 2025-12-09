@@ -33,7 +33,9 @@ And you must have **BLAST+** installed:
 sudo apt install ncbi-blast+
 
 # macOS (Homebrew)
-brew install blast              
+brew install blast
+
+blastn -version              
 ```
 
 ## Usage
