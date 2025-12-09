@@ -26,8 +26,10 @@ uv --version
 ```
 Ainsi que le logiciel BLAST+ soit installé
 ```
-sudo apt install ncbi-blast+     # Linux
-brew install blast               # macOS (Homebrew)
+# Linux
+sudo apt install ncbi-blast+
+# macOS (Homebrew)
+brew install blast              
 ```
 
 # 
