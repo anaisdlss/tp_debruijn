@@ -1,33 +1,37 @@
-# Assembleur basé sur les graphes de Debruijn
+# De Bruijn Graph-Based Assembler
 
 ## Introduction
 
-Ce projet implémente un assembleur génomique simplifié basé sur un graphe de De Bruijn, une méthode largement utilisée dans les pipelines d’assemblage modernes (ex. Velvet, SPAdes).
+This project implements a simplified genome assembler based on a De Bruijn graph, a method widely used in modern assembly pipelines (e.g., Velvet, SPAdes).
 
-L’objectif est de reconstruire le génome d’un virus (Enterovirus A71) à partir de reads courts (Illumina).
-Le pipeline permet de :
-- générer les k-mers et construire le graphe de De Bruijn
-- nettoyer le graphe (tips, bulles)
-- extraire des contigs
-- comparer ces contigs au génome de référence via BLAST
+The goal is to reconstruct the genome of a virus (Enterovirus A71) from short Illumina reads.
+The pipeline allows you to:
+- generate k-mers and build the De Bruijn graph
+- clean the graph (tips, bubbles)
+- extract contigs
+- compare these contigs to a reference genome using BLAST
 
-Ce TP illustre le fonctionnement interne des assembleurs modernes, la gestion des erreurs de séquençage et la reconstruction de séquences à partir de fragments.
+This practical exercise illustrates how modern assemblers work internally: how they manage sequencing errors, how graph structures represent genome overlaps, and how complete sequences can be reconstructed from fragmented reads.
 
-## Prerequis
-Vous devez avoir Python 3.10+ installé,
-```
+
+## Prerequisites
+
+You must have **Python 3.10+** installed:
+
+```bash
 python3 --version
 ```
 
-Ainsi que le gestionnaire d'environnement 'uv' installé.
+You also need the **uv** environment manager:
 ```
 curl -LsSf https://astral.sh/uv/install.sh | sh
 uv --version
 ```
-Ainsi que le logiciel BLAST+ soit installé
+And you must have **BLAST+** installed:
 ```
 # Linux
 sudo apt install ncbi-blast+
+
 # macOS (Homebrew)
 brew install blast              
 ```
@@ -35,35 +39,59 @@ brew install blast
 ## Usage
 
 
-Veuillez cloner le projet et aller au repertoire crée: 
+First, clone the repository and move into the created directory:
 ```
 git clone https://github.com/anaisdlss/tp_debruijn.git
 cd tp_debruijn
 ```
 
-Sychroniser l'environnement
+Synchronize the environment:
 ```
 uv sync
 ```
-Créez un fichier *résultats* :
+Create an output directory:
 ```
 mkdir resultats
 ```
 
-Puis exectutez le script :
+Then run the assembler script:
 ```
-uv run python debruijn/debruijn.py -i data/eva71_plus_perfect.fq -k 22 -o resultats/contigs.fasta -f resultats/graph.png
+uv run python debruijn/debruijn.py \
+    -i data/eva71_plus_perfect.fq \
+    -k 22 \
+    -o resultats/contigs.fasta \
+    -f resultats/graph.png
 ```
-Il est possible de modifier la taille des kmer avec -k
+- -i : input FASTQ file containing sequencing reads. You may replace eva71_plus_perfect.fq with any FASTQ dataset you want to assemble.
+- -k : k-mer size used to build the De Bruijn graph (default = 22).
+Larger k-mers give more specific assemblies; smaller ones are more error-tolerant.
+- -o : output FASTA file where the assembled contigs will be saved.
+- -f : optional PNG image showing the cleaned De Bruijn graph.
+
+The generated contigs and graph are saved respectively in:
+- resultats/contigs.fasta
+- resultats/graph.png
 
 
-Après cela, créez la base de données BLAST pour la référence ```data/eva71.fna```:
+
+After that, create a BLAST database from the reference data/eva71.fna:
 ```
 makeblastdb -in data/eva71.fna -dbtype nucl
 ```
-Puis comparez vos contigs obtenues dans ```resultats/contigs.fasta``` avec la référence :
+- makeblastdb : creates a BLAST-searchable database from a reference sequence.
+- -in data/eva71.fna : input reference genome (you can replace it with any FASTA file).
+- -dbtype nucl : specifies that the database is nucleotide (use prot for protein databases).
+
+Then compare your assembled contigs (resultats/contigs.fasta) to the reference genome:
 ```
 blastn -query resultats/contigs.fasta -db data/eva71.fna -out resultats/blast_result.txt -outfmt 6
 ```
+- blastn compares your assembled nucleotide contigs to the reference genome.
+- -query resultats/contigs.fasta is the FASTA file containing the contigs produced by the assembler.
+- -db data/eva71.fna is the BLAST database created from the reference genome.
+- -out resultats/blast_result.txt saves the alignment results to a text file.
+- -outfmt 6 outputs results in a simple tabular format (easy to parse or inspect).
 
-Les resultats obtenus se trouvent dans le fichier ```resultats/blast_result.txt```.
+This step verifies how well the reconstructed contigs align with the known reference, confirming that the assembly reflects the genome from which the reads originally came.
+
+The BLAST results are written to:```resultats/blast_result.txt```.
