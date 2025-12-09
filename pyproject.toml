@@ -7,6 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
     "networkx",
     "matplotlib",
+    "scipy",
 ]
 
 [tool.uv]
